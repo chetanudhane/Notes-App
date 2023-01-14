@@ -21,9 +21,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final auth = FirebaseAuth.instance;
   final ref = FirebaseFirestore.instance.collection('notes');
+  DocumentSnapshot? lastDocument;
+  List<NotesModel> list = [];
+  final ScrollController scrollController = ScrollController();
 
   bool isInSearchMode = false;
-  
+  bool isLoadingData = false;
+  bool hasMoreData = true;
+
   List<Color> colors = [
     Colors.yellow.shade100,
     Colors.red.shade100,
@@ -34,25 +39,55 @@ class _HomeScreenState extends State<HomeScreen> {
   Icon cusIcon = const Icon(Icons.search);
   Widget cusSearchBar = const Text("Notes");
 
-  List<NotesModel> list = [];
+  void paginatedData() async {
+    if (hasMoreData) {
+      setState(() {
+        isLoadingData = true;
+      });
+      late QuerySnapshot<Map<String, dynamic>> querySnapshot;
 
-  fetchNotes() async {
-    final snapshot = await ref.get();
-    for (var element in snapshot.docs) {
-      final note = NotesModel.fromQuerySnapshot(element);
-      list.add(note);
+      if (lastDocument == null) {
+        querySnapshot = await ref.limit(11).get();
+      } else {
+        querySnapshot = await ref
+            .limit(10)
+            .startAfterDocument(lastDocument!)
+            .get();
+      }
+      lastDocument = querySnapshot.docs.last;
+      for (var element in querySnapshot.docs) {
+        final note = NotesModel.fromQuerySnapshot(element);
+        list.add(note);
+        // list.add(note);
+      }
+      isLoadingData = false;
+      debugPrint("++++++++++++++++++++++++++++++${list.length}");
+      setState(() {});
+
+      if (querySnapshot.docs.length < 11) {
+        hasMoreData = false;
+      }
+    } else {
+      debugPrint("No More data");
     }
-    setState(() {});
   }
 
   @override
   void initState() {
-    fetchNotes();
+    // TODO: implement initState
     super.initState();
+    paginatedData();
+    scrollController.addListener(() {
+      if (scrollController.position.pixels ==
+          scrollController.position.maxScrollExtent) {
+        paginatedData();
+      }
+    });
   }
 
   @override
   void dispose() {
+    // TODO: implement dispose
     list.clear();
     super.dispose();
   }
@@ -224,6 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: ListView.builder(
+                controller: scrollController,
                   itemCount:
                       !isInSearchMode ? list.length : filteredList.length,
                   itemBuilder: (context, index) {
@@ -261,6 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   }),
             ),
+            isLoadingData ? const Center(child: CircularProgressIndicator(),) : const SizedBox(),
           ],
         ));
   }
