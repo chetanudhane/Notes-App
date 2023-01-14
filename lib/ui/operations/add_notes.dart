@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:notes/ui/posts/home_screen.dart';
 
 class AddNotes extends StatefulWidget {
    const AddNotes({Key? key}) : super(key: key);
@@ -26,7 +27,7 @@ class _AddNotesState extends State<AddNotes> {
                  "title": title.text,
                  "content": content.text,
                  "id": document.id,
-               }).then((value) => Navigator.pop(context));
+               }).then((value) => Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeScreen())));
               // .then(() => Navigator.pop(context));
               },
               child: const Text("Save",
