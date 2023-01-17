@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isInSearchMode = false;
   bool isLoadingData = false;
   bool hasMoreData = true;
+  bool isGridview = false;
 
   List<Color> colors = [
     Colors.yellow.shade100,
@@ -38,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Icon cusIcon = const Icon(Icons.search);
   Widget cusSearchBar = const Text("Notes");
+  Icon viewIcon = const Icon(Icons.grid_view);
 
   void paginatedData() async {
     if (hasMoreData) {
@@ -50,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
         querySnapshot = await ref.limit(11).get();
       } else {
         querySnapshot = await ref
-            .limit(10)
+            .limit(11)
             .startAfterDocument(lastDocument!)
             .get();
       }
@@ -76,6 +78,36 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    // //1
+    // FirebaseMessaging.instance.getInitialMessage().then(
+    //     (message) {
+    //       debugPrint("FirebaseMessaging.instance.getInitialMessage");
+    //       if(message != null) {
+    //         debugPrint("New Notification");
+    //       }
+    //     },
+    // );
+    // //2
+    // FirebaseMessaging.onMessage.listen((message) {
+    //   debugPrint("FirebaseMessaging.onMessage.listen");
+    //   if(message.notification != null) {
+    //     debugPrint(message.notification!.title);
+    //     debugPrint(message.notification!.body);
+    //     debugPrint("message details ${message.data}");
+    //     LocalNotificationService.createAndDisplayNotification(message);
+    //   }
+    // },
+    // );
+    // //3
+    // FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    //   debugPrint("FirebaseMessaging.onMessageOpenedApp.listen");
+    //   if(message.notification != null) {
+    //     debugPrint(message.notification!.title);
+    //     debugPrint(message.notification!.body);
+    //     debugPrint("message details ${message.data["_id"]}");
+    //   }
+    // },
+    // );
     paginatedData();
     scrollController.addListener(() {
       if (scrollController.position.pixels ==
@@ -137,6 +169,18 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: cusIcon,
             ),
             IconButton(
+                onPressed: (){
+                  setState(() {
+                    if(viewIcon.icon == Icons.grid_view){
+                      viewIcon = const Icon(Icons.list);
+                    }else {
+                      viewIcon = const Icon(Icons.grid_view);
+                    }
+                  });
+                },
+                icon: viewIcon,
+            ),
+            IconButton(
               onPressed: () {
                 auth.signOut().then((value) {
                   SharedPreferencesProvider.logOutUser();
@@ -186,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 onTap: () {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const HomeScreen()));
@@ -201,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 onTap: () {
-                  Navigator.pushReplacement(context,
+                  Navigator.push(context,
                       MaterialPageRoute(builder: (context) => TrashScreen()));
                 },
               ),
@@ -258,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
         body: Column(
           children: [
             Expanded(
-              child: ListView.builder(
+              child: viewIcon.icon == Icons.grid_view ? ListView.builder(
                 controller: scrollController,
                   itemCount:
                       !isInSearchMode ? list.length : filteredList.length,
@@ -295,7 +339,31 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: const Icon(Icons.edit),
                       ),
                     );
-                  }),
+                  },
+                  ) : GridView.builder(
+                controller: scrollController,
+                itemCount: !isInSearchMode ? list.length : filteredList.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                    childAspectRatio: 0.80,
+                    crossAxisSpacing: 10.0,
+                    mainAxisSpacing: 10.0,
+                  ),
+                  itemBuilder: (context, index) {
+                    final note =
+                    !isInSearchMode ? list[index] : filteredList[index];
+                    return Card(
+                      child: Text(
+                      note.title!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                        fontSize: 32.0,
+                      ),
+                      ),
+                    );
+                  },
+              ),
             ),
             isLoadingData ? const Center(child: CircularProgressIndicator(),) : const SizedBox(),
           ],
